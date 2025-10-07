@@ -32,13 +32,6 @@ This project is an **AI-based course recommender system** that predicts suitable
 
 ---
 
-## **Model Performance (Placeholder)**
-
-| Model    | Accuracy | Precision | Recall | F1 Score | ROC-AUC |
-| -------- | -------- | --------- | ------ | -------- | ------- |
-| XGBoost  | 0.XXXX   | 0.XXXX    | 0.XXXX | 0.XXXX   | 0.XXXX  |
-| LightGBM | 0.XXXX   | 0.XXXX    | 0.XXXX | 0.XXXX   | 0.XXXX  |
-
 ---
 
 ## **Usage**
