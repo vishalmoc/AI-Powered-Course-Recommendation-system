@@ -1,0 +1,609 @@
+AI-Powered Course Recommendations Based on Learner Personality Traits in TVET
+
+#Including a program to enable sophisticated prediction boosting methods
+%pip install XGBoost
+
+#Including an application to enable effective tree-based learning for huge datasets
+%pip install lightgbm
+
+#A tool for managing structured data and tables
+import pandas as pandu
+#Toolkit for manipulating arrays and performing mathematical calculations
+import numpy as naap
+# A library for creating visually appealing statistics charts
+import seaborn as saans
+#  Module to manipulate folder directories and the system
+import os
+#  A module for simple file and directory management
+from scipy.stats import zscore
+# Offer mathematical operations for computations
+import math
+# Turn on advanced file and folder functions
+import shutil
+# Fast tree-based prediction model engine
+import lightgbm as laagb
+# A package for creating visual representations and graphs
+import matplotlib.pyplot as paalt
+#Generate random whole numbers and continuous values for sampling
+from scipy.stats import randint, uniform
+#Build a classification model using boosted trees
+from xgboost import XGBClassifier
+#Build a fast gradient-based classification tree model
+from lightgbm import LGBMClassifier
+#Automatically explore multiple hyperparameter settings
+from sklearn.model_selection import RandomizedSearchCV
+#Measure completeness of predictions
+#Evaluate combined performance of precision and recall
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+#Transform categorical targets into binary indicators
+from sklearn.preprocessing import label_binarize
+#Evaluate agreement between actual and predicted labels
+#Assess classification probability using AUC
+from sklearn.metrics import ndcg_score, mean_absolute_error, mean_squared_error, matthews_corrcoef, cohen_kappa_score, roc_auc_score
+#Generate coordinates for plotting true vs false positive rates
+#Compute area under the curve
+from sklearn.metrics import roc_curve, roc_auc_score
+#Transform categorical targets into binary indicators
+from sklearn.preprocessing import label_binarize
+#Evaluate probability-based performance
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+#Encode categorical labels as integers
+#Scale numerical features to standard range
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+#Split data into learning and testing portions
+from sklearn.model_selection import train_test_split
+#Compute pecision, recal, and  simultaneously
+from sklearn.metrics import precision_recall_fscore_support
+#Evaluate probability-based performance with Area under curve
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
+#Encode categorical labeling as integers
+from sklearn.preprocessing import LabelEncoder
+#Show a visual representation of the confusing table
+from sklearn.metrics import ConfusionMatrixDisplay
+
+#Use the cloud notebook environment to access Google Drier
+from google.colab import drive
+#Mount the user's disc to the designated folder directory by connecting it.
+drive.mount('/content/drive')
+
+#Open the cloud drive, load the dataset from the designated path, and save it in a table-like format for analysis and editing.
+course = pandu.read_csv('/content/drive/MyDrive/Colab Notebooks/Bind-up_code/Course recommender system/Tvet_data.csv')
+
+#show the head and tail
+course
+
+#Verify the dataset's row and column counts and Recognise the general size and structure of the dataset.
+course.shape
+
+#Create summary statistics for every column that contains numbers.
+#Obtain information such as the mean, median, standard deviation, minimum, maximum, and
+course.describe()
+
+#Present a succinct overview of the dataset.
+#Display memory consumption, non-missing values, data types, and column names.
+course.info()
+
+#Determine how many entries are missing overall from each column.
+course.isnull().sum()
+
+#Obtain the dimensions of the dataset (rows and columns)
+course.shape
+
+Visulization plot
+
+# Select number colmns
+numerical_cols = course.select_dtypes(include=naap.number).columns
+# Compute values for all number coluns
+z_scores = course[numerical_cols].apply(zscore)
+# Identify outlies
+outliers = course[(z_scores.abs() > 3).any(axis=1)]
+# Using the core cutoff, eliminate rows with extreme values.
+course_cleaned = course[(z_scores.abs() <= 3).all(axis=1)]
+# Show the total number of extreme entries that were discovered.
+print(f"Total outliers detected: {outliers.shape[0]}")
+# Repeatedly delete extreme rows (duplicate operation)
+course_cleaned = course[(z_scores.abs() <= 3).all(axis=1)]
+# Display the size of the dataset before eliminating extreme values.
+print(f"Shape before removal: {course.shape}")
+# Display the size of the dataset after eliminating extreme values.
+print(f"Shape after removal: {course_cleaned.shape}")
+# Count how many numeric characteristics will be visualized
+num_plots = len(numerical_cols)
+# Establish how many rows and columns the plot grid will have.
+rows = cols = 3
+# Make a figure with several subplots and adjust its dimensions.
+fig, axes = paalt.subplots(rows, cols, figsize=(12, 10))
+# To make iteration easier, flatten the subplot grid.
+axes = axes.flatten()
+# For visualisation, iterate over every numerical characteristic.
+for i, col in enumerate(numerical_cols):
+    # Obtain the current feature's Z-score values.
+    col_z = z_scores[col]
+    # Create a scattr plot for every data point.
+    axes[i].scatter(course.index, col_z, label='Data Points')
+    # Draw the scater plot's extreme values in red.
+    axes[i].scatter(outliers.index, col_z[outliers.index], color='red', label='Outliers')
+    # Indicate row locations on the x-axis.
+    axes[i].set_xlabel('Index')
+    # Put the Z-scoe values on the y-axis.
+    axes[i].set_ylabel('Z-score')
+    # Configure the plot title to display the feature name against the Z-sore.
+    axes[i].set_title(f'{col} vs Z-score')
+    # To distinguish between regular and extreme locations, add a lgend.
+    axes[i].legend()
+    # To improve readability, activate grid lines.
+    axes[i].grid(True)
+# To maintain a tidy layout, turn off any subplot axes that aren't in use.
+for j in range(i+1, len(axes)):
+    axes[j].axis('off')
+# Adjust distance between plots to prevent overlap
+paalt.tight_layout()
+# Show every plot on the screen.
+paalt.show()
+
+label encoding.
+
+# Picking out all the columns that contain non-numeric values
+categorical_cols = course.select_dtypes(include=['object']).columns
+
+# Preparing a helper that transforms words into number codes
+le = LabelEncoder()
+
+# Going through each chosen text column one by one
+for col in categorical_cols:
+    # Replacing text entries with numeric identifiers
+    course[col] = le.fit_transform(course[col])
+
+    # Printing the relationship between original labels and their assigned numbers
+    print(f"Encoded {col} - Mapping: {dict(zip(le.classes_, le.transform(le.classes_)))}")
+
+# Showing the first few records of the updated dataset after transformation
+print(course.head())
+
+
+define x and y
+
+# Collecting all features from the dataset except the one to be predicted
+X = course.drop('Trade', axis=1)
+
+# Setting aside the column that represents what we want to forecast
+y = course['Trade']
+
+
+scaling the dataset
+
+# Bringing in a utility to normalize numeric features
+from sklearn.preprocessing import StandardScaler
+
+# Identifying all columns that contain numerical values
+numeric_cols = X.select_dtypes(include=[naap.number]).columns
+
+# Creating an instance of the normalizing tool
+scaler = StandardScaler()
+
+# Applying the transformation so data has zero mean and unit variance
+X_scaled = scaler.fit_transform(X[numeric_cols])
+
+# Converting the scaled output back into a table with proper column labels
+X_scaled = pandu.DataFrame(X_scaled, columns=numeric_cols)
+
+# Printing the average values calculated during scaling
+print("Standard Scaler Mean:", scaler.mean_)
+
+# Printing the variance values learned by the scaler
+print("Standard Scaler Variance:", scaler.var_)
+
+# Showing the first few rows of the normalized dataset
+print(X_scaled.head())
+
+
+split the dataset
+
+# Importing a function that helps split data into training and evaluation portions
+from sklearn.model_selection import train_test_split
+
+# Dividing the features and target so most is used for learning and a smaller part for checking performance
+X_train, X_test, y_train, y_test = train_test_split(X_scaled, y, test_size=0.2, random_state=42)
+
+
+XGboost
+
+# Converting the training data into a structure understood by the gradient boosting tool
+xgb_train = xgb.DMatrix(X_train, y_train, enable_categorical=True)
+
+# Converting the testing data into the same structure for consistency
+xgb_test = xgb.DMatrix(X_test, y_test, enable_categorical=True)
+
+# Defining key settings for the model, including task type, category count, depth, learning speed, and evaluation method
+params = {
+    'objective': 'multi:softmax',  # multi-class classification objective
+    'num_class': len(naap.unique(y_train)), # number of distinct classes
+    'max_depth': 3,
+    'learning_rate': 0.1,
+    'eval_metric': 'mlogloss' # metric suited for multi-class tasks
+}
+
+# Setting the number of boosting rounds for training
+num_boost_round = 50
+
+# Training the boosting model with the prepared training data
+model = xgb.train(params=params, dtrain=xgb_train, num_boost_round=num_boost_round)
+
+# Using the trained model to generate predictions on unseen data
+preds = model.predict(xgb_test)
+
+# Calculating how often predictions match the actual labels
+accuracy = accuracy_score(y_test, preds)
+
+# Printing the final accuracy score expressed as a percentage
+print(f"Accuracy of the XGBoost model: {accuracy * 100:.2f}%")
+
+
+Light GBM
+
+# Initializing a LightGBM classifier with parameters for multi-class learning, depth, leaves, learning rate, and randomness control
+model = laagb.LGBMClassifier(
+    objective='multiclass',
+    num_class=len(y_train.unique()),
+    learning_rate=0.1,
+    n_estimators=100,
+    max_depth=7,
+    num_leaves=31,
+    random_state=42
+)
+
+# Training the model using the training dataset
+model.fit(X_train, y_train)
+
+# Making predictions on the test dataset
+y_pred = model.predict(X_test)
+
+# Calculating overall prediction accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+# Calculating the weighted F1 score for balanced evaluation
+f1 = f1_score(y_test, y_pred, average='weighted')
+
+# Calculating the weighted precision score
+precision = precision_score(y_test, y_pred, average='weighted')
+
+# Calculating the weighted recall score
+recall = recall_score(y_test, y_pred, average='weighted')
+
+# Displaying the accuracy of the model
+print(f"LightGBM Model Accuracy: {accuracy:.4f}")
+
+# Displaying the F1 score of the model
+print(f"LightGBM Model F1 Score: {f1:.4f}")
+
+# Displaying the precision of the model
+print(f"LightGBM Model Precision: {precision:.4f}")
+
+# Displaying the recall of the model
+print(f"LightGBM Model Recall: {recall:.4f}")
+
+
+Hyperparameter tuning
+
+# Define sample fractions, step size, depth, and count ranges for a single tree-based predictor.
+xgb_params = {
+    'n_estimators': randint(50, 300),
+    'max_depth': randint(3, 15),
+    'learning_rate': uniform(0.01, 0.3),
+    'subsample': uniform(0.6, 0.4),
+    'colsample_bytree': uniform(0.6, 0.4)
+}
+# For a different tree-based predictor, provide ranges of counts, depth, step size, leaf numbers, and sample percentages.
+lgbm_params = {
+    'n_estimators': randint(50, 300),
+    'max_depth': randint(-1, 15),
+    'learning_rate': uniform(0.01, 0.3),
+    'num_leaves': randint(20, 150),
+    'subsample': uniform(0.6, 0.4),
+    'colsample_bytree': uniform(0.6, 0.4)
+}
+# Build a multi-category predictor with a fixed seed, assessment technique, task type, class count, and label handling.
+xgb_model = XGBClassifier(
+    objective='multi:softmax',
+    num_class=len(naap.unique(y_train)),
+    random_state=42,
+    eval_metric='mlogloss',
+    use_label_encoder=False
+)
+# With parallel processing, progress display, performance grading, cross-validation, and a fixed seed, set up an automated search to test various parameter combinations.
+xgb_search = RandomizedSearchCV(
+    estimator=xgb_model,
+    param_distributions=xgb_params,
+    n_iter=50,
+    scoring='accuracy',
+    cv=5,
+    verbose=1,
+    n_jobs=-1,
+    random_state=42
+)
+#Run the learning dataset's automated search.
+xgb_search.fit(X_train, y_train)
+#Show the optimal set of parameters for the initial tree-based predictor.
+print("\nXGBoost Best Params:", xgb_search.best_params_)
+#Show the first predictor's cross-validation performance.
+print("XGBoost CV Accuracy:", xgb_search.best_score_)
+#Identify the search's top predictor.
+xgb_best = xgb_search.best_estimator_
+#Use the best predictor to generate predictions on the testing dataset.
+y_pred_xgb = xgb_best.predict(X_test)
+# Show the first tree-based predictor's total prediction accuracy.
+print("XGBoost Test Accuracy:", accuracy_score(y_test, y_pred_xgb))
+# Show the first predictor's weighted prediction accuracy.
+print("Precision:", precision_score(y_test, y_pred_xgb, average='weighted'))
+# Show the first predictor's weighted prediction completeness.
+print("Recall:", recall_score(y_test, y_pred_xgb, average='weighted'))
+# Show the first predictor's weighted aggregate performance score.
+print("F1 Score:", f1_score(y_test, y_pred_xgb, average='weighted'))
+# Set up a multi-category predictor with a fixed class count and seed.
+lgbm_model = LGBMClassifier(
+    objective='multiclass',
+    num_class=len(naap.unique(y_train)),
+    random_state=42
+)
+# Configure an automated search to evaluate various parameter combinations using verbosity, parallel processing, performance grading, cross-validation, and a fixed seed.
+lgbm_search = RandomizedSearchCV(
+    estimator=lgbm_model,
+    param_distributions=lgbm_params,
+    n_iter=50,
+    scoring='accuracy',
+    cv=5,
+    verbose=1,
+    n_jobs=-1,
+    random_state=42
+)
+# Perform the automated search for the second predictor on the learning dataset.
+lgbm_search.fit(X_train, y_train)
+# Show the optimal set of parameters discovered for the second predictor.
+print("\nLightGBM Best Params:", lgbm_search.best_params_)
+# Show the second predictor's cross-validation performance.
+print("LightGBM CV Accuracy:", lgbm_search.best_score_)
+# Use the search to find the best prediction.
+lgbm_best = lgbm_search.best_estimator_
+# Use the second-best predictor to create zredictions on the testing dataset.
+y_pred_lgbm = lgbm_best.predict(X_test)
+# Show the second predictor's total xrediction bccuracy.
+print("LightGBM Test Accuracy:", accuracy_score(y_test, y_pred_lgbm))
+# Show the second predictor's aeighted trediction bccuracy.
+print("Precision:", precision_score(y_test, y_pred_lgbm, average='weighted'))
+# Show the second predictor's beighted pwrediction completeness.
+print("Recall:", recall_score(y_test, y_pred_lgbm, average='weighted'))
+# Show the second predictor's ceighted agregate performance score.
+print("F1 Score:", f1_score(y_test, y_pred_lgbm, average='weighted'))
+
+
+XGboost results
+
+# Calculating the accuracy of the XGBoost model
+accuracy_xgb = accuracy_score(y_test, y_pred_xgb)
+
+# Measuring the weighted precision of predictions
+precision_xgb = precision_score(y_test, y_pred_xgb, average='weighted')
+
+# Measuring the weighted recall of predictions
+recall_xgb = recall_score(y_test, y_pred_xgb, average='weighted')
+
+# Measuring the weighted F1 score for balanced performance
+f1_xgb = f1_score(y_test, y_pred_xgb, average='weighted')
+
+# Printing the accuracy score of XGBoost
+print(f"XGBoost Model Accuracy: {accuracy_xgb:.4f}")
+
+# Printing the precision score of XGBoost
+print(f"XGBoost Model Precision: {precision_xgb:.4f}")
+
+# Printing the recall score of XGBoost
+print(f"XGBoost Model Recall: {recall_xgb:.4f}")
+
+# Printing the F1 score of XGBoost
+print(f"XGBoost Model F1 Score: {f1_xgb:.4f}")
+
+
+# Generate probability estimates for each class using the trained model
+y_pred_proba_xgb = xgb_best.predict_proba(X_test)
+
+# Convert the actual target values into a format suitable for multi-class evaluation
+y_test_binarized = label_binarize(y_test, classes=naap.unique(y_test))
+
+# Calculate the overall AUC score using one-vs-rest strategy
+roc_auc_xgb = roc_auc_score(y_test, y_pred_proba_xgb, multi_class='ovr')
+
+# Print the average AUC score across all classes
+print(f"XGBoost ROC AUC (macro): {roc_auc_xgb:.4f}")
+
+# Select a particular class index to plot its ROC curve
+class_index = 0
+
+# Derive the false positive rate and true positive rate for the chosen class
+fpr_xgb, tpr_xgb, _ = roc_curve(y_test_binarized[:, class_index], y_pred_proba_xgb[:, class_index])
+
+# Define the size of the visualization canvas
+paalt.figure(figsize=(8, 6))
+
+# Plot the ROC curve for the chosen class
+paalt.plot(fpr_xgb, tpr_xgb, label=f'XGBoost ROC Curve (Class {class_index})')
+
+# Draw a reference diagonal line showing random chance
+paalt.plot([0, 1], [0, 1], 'k--', label='Random guess')
+
+# Label the horizontal axis with false positive rate
+paalt.xlabel('False Positive Rate')
+
+# Label the vertical axis with true positive rate
+paalt.ylabel('True Positive Rate')
+
+# Add a title highlighting the selected class
+paalt.title('XGBoost ROC Curve - Class {}'.format(class_index))
+
+# Show a legend to explain the plotted lines
+paalt.legend(loc='best')
+
+# Add a background grid for readability
+paalt.grid()
+
+# Display the final visualization
+paalt.show()
+
+
+Light GBM results
+
+# Calculate the overall accuracy score for LightGBM predictions
+accuracy_lgbm = accuracy_score(y_test, y_pred)
+
+# Calculate the weighted precision score for LightGBM predictions
+precision_lgbm = precision_score(y_test, y_pred, average='weighted')
+
+# Calculate the weighted recall score for LightGBM predictions
+recall_lgbm = recall_score(y_test, y_pred, average='weighted')
+
+# Calculate the weighted F1 score for LightGBM predictions
+f1_lgbm = f1_score(y_test, y_pred, average='weighted')
+
+# Print the accuracy score of the LightGBM model
+print(f"LightGBM Model Accuracy: {accuracy_lgbm:.4f}")
+
+# Print the precision score of the LightGBM model
+print(f"LightGBM Model Precision: {precision_lgbm:.4f}")
+
+# Print the recall score of the LightGBM model
+print(f"LightGBM Model Recall: {recall_lgbm:.4f}")
+
+# Print the F1 score of the LightGBM model
+print(f"LightGBM Model F1 Score: {f1_lgbm:.4f}")
+
+
+# Using test data, obtain the second model's predicted probabilities for every category.
+y_pred_proba_lgbm = lgbm_best.predict_proba(X_test)
+# Determine the model's ability to differentiate between categories using the one-vs-rest method.
+roc_auc_lgbm = roc_auc_score(y_test, y_pred_proba_lgbm, multi_class='ovr')
+# Show the second model's overall separation score.
+print(f"LightGBM ROC AUC (macro): {roc_auc_lgbm:.4f}")
+# Determine the rates of false alarms and accurate detections for a given category.
+fpr_lgbm, tpr_lgbm, _ = roc_curve(y_test_binarized[:, class_index], y_pred_proba_lgbm[:, class_index])
+# Make a plotting chart area.
+paalt.figure(figsize=(8, 6))
+# Create the selected category's performance curve.
+paalt.plot(fpr_lgbm, tpr_lgbm, label=f'LightGBM ROC Curve (Class {class_index})')
+# Include a diagonal line to symbolise arbitrary guessing.
+paalt.plot([0, 1], [0, 1], 'k--', label='Random guess')
+# Indicate the possibility of false alarms on the horizontal axis.
+paalt.xlabel('False Positive Rate')
+# Indicate the probability of accurate detections on the vertical axis.
+paalt.ylabel('True Positive Rate')
+# Give the chosen category a descriptive title for the chart.
+paalt.title('LightGBM ROC Curve - Class {}'.format(class_index))
+# Include a guide that explains the chart's lines.
+paalt.legend(loc='best')
+# To make reading easier, display grid lines.
+paalt.grid()
+# Show the viewer the chart.
+paalt.show()
+
+Connfusion matrix
+
+# Using the second model, create a table that displays the right and wrong predictions for each category.
+ConfusionMatrixDisplay.from_estimator(loaded_lgbm_model, X_test, y_test, cmap='Blues', normalize='true')
+# Make sure the title of the chart indicates that the values are scaled proportionately.
+paalt.title('Normalized Confusion Matrix - LightGBM')
+# Show the matrix chart of confusion.
+paalt.show()
+
+
+Evaluation of Prediction and Ranking Performance
+
+# For multi-class evaluation, convert the true labels into a binary format.
+y_test_binarized = label_binarize(y_test, classes=naap.unique(y_test))
+# Create a function to determine the mean reciprocal rank.
+def mrr(y_true, y_pred_proba):
+    # For every sample, sort the predicted probabilities in descending order.
+    order = naap.argsort(-y_pred_proba, axis=1)
+    # Ascertain each sample's true label's rank position.
+    ranks = [naap.where(order[i] == y_true.iloc[i])[0][0] for i in range(len(y_true))]
+    # Determine the average reciprocal of ranks.
+    return naap.mean(1.0 / (naap.array(ranks) + 1))
+# Determine the average absolute difference between the predicted and actual values.
+mae = mean_absolute_error(y_test, y_pred)
+# Determine the range of actual labels.
+y_test_range = y_test.max() - y_test.min()
+# Handle the zero range and normalise the mean absolute error by the label range.
+nmae = mae / y_test_range if y_test_range != 0 else naap.nan
+# Determine the root of the average squared discrepancy between the actual and anticipated values.
+rmse = naap.sqrt(mean_squared_error(y_test, y_pred))
+# Determine the average reciprocal rank score for forecasts.
+mrr_score = mrr(y_test, y_pred_proba)
+# Determine the degree to which the top five anticipated rankings correspond to the actual categories.
+ndcg = ndcg_score(y_test_binarized, y_pred_proba, k=5)
+# Determine the average reciprocal rank score for forecasts.
+roc_auc = roc_auc_score(y_test_binarized, y_pred_proba, average='weighted', multi_class='ovr')
+# Determine the top five predictions' normalised discounted cumulative gain.
+mcc = matthews_corrcoef(y_test, y_pred)
+# Determine the multi-class predictions' area under the ROC curve.
+cohen_kappa = cohen_kappa_score(y_test, y_pred)
+# Determine the correlation coefficient between the actual and predicted categories.
+print(f'MAE: {mae:.4f}, NMAE: {nmae:.4f}, RMSE: {rmse:.4f}')
+# Determine the degree of agreement between the true and predicted labels beyond chance.
+print(f'MRR: {mrr_score:.4f}, NDCG@5: {ndcg:.4f}')
+# Show the calculated metrics for error, ranking, and classification.
+print(f'ROC AUC: {roc_auc:.4f}, MCC: {mcc:.4f}, Cohen\'s Kappa: {cohen_kappa:.4f}')
+
+Model Performance Comparison
+
+# Define the names of both models being compared
+models = ['XGBoost', 'LightGBM']
+
+# Store the overall accuracy values for each model
+accuracy = [accuracy_score(y_test, y_pred_xgb), accuracy_score(y_test, y_pred_lgbm)]
+
+# Store the F1 score values for each model
+f1 = [f1_score(y_test, y_pred_xgb, average='weighted'), f1_score(y_test, y_pred_lgbm, average='weighted')]
+
+# Store the precision values for each model
+precision = [precision_score(y_test, y_pred_xgb, average='weighted'), precision_score(y_test, y_pred_lgbm, average='weighted')]
+
+# Store the recall values for each model
+recall = [recall_score(y_test, y_pred_xgb, average='weighted'), recall_score(y_test, y_pred_lgbm, average='weighted')]
+
+# Create positions for placing bars on the chart
+x = naap.arange(len(models))
+
+# Set the width of each bar
+width = 0.2
+
+# Initialize the plot with figure size
+fig, ax = paalt.subplots(figsize=(10,5))
+
+# Draw bars for accuracy scores
+ax.bar(x - 1.5*width, accuracy, width, label='Accuracy')
+
+# Draw bars for F1 scores
+ax.bar(x - 0.5*width, f1, width, label='F1 Score')
+
+# Draw bars for precision scores
+ax.bar(x + 0.5*width, precision, width, label='Precision')
+
+# Draw bars for recall scores
+ax.bar(x + 1.5*width, recall, width, label='Recall')
+
+# Label the y-axis to indicate metric values
+ax.set_ylabel('Score')
+
+# Set a descriptive title for the chart
+ax.set_title('Model Performance Comparison')
+
+# Place model names on the x-axis
+ax.set_xticks(x)
+
+# Label each x-axis position with the corresponding model
+ax.set_xticklabels(models)
+
+# Add a legend to explain which bars represent which metric
+ax.legend()
+
+# Display the bar chart
+paalt.show()
+
+
